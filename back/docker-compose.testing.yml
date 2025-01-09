@@ -1,0 +1,37 @@
+services:
+  app:
+    build:
+      context: .
+      target: testing
+    image: ${APP_IMAGE_NAME}
+    container_name: ${APP_CONTAINER_NAME}
+    volumes:
+      - .:/home/node/app:cache
+    environment:
+      APP_NODE_ENV: ${APP_NODE_ENV}
+      APP_PORT: ${APP_PORT}
+      APP_HOST: ${APP_HOST}
+
+      EXAMPLE_MESSAGE: ${EXAMPLE_MESSAGE}
+
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:${DB_PORT}/${DB_NAME}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "npm run prisma:generate && exec npm run test"
+
+  db:
+    image: ${DB_IMAGE_NAME}
+    container_name: ${DB_CONTAINER_NAME}
+    restart: always
+    environment:
+      POSTGRES_USER: "${DB_USER}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+      POSTGRES_DB: "${DB_NAME}"
+    volumes:
+      - ./local/postgres/test-init.sql.gz:/docker-entrypoint-initdb.d/test-init.sql.gz
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -h localhost -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

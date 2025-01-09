@@ -1,0 +1,25 @@
+services:
+  app:
+    image: development/app
+    container_name: app_development
+    build:
+      context: .
+      target: development
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    volumes:
+      - .:/home/node/app:cache
+      - ./node_modules:/home/node/app/node_modules
+    environment:
+      APP_NAME: ${APP_NAME}
+      APP_NODE_ENV: ${APP_NODE_ENV}
+      APP_PORT: ${APP_PORT}
+
+      VUE_APP_DEVTOOLS: ${VUE_APP_DEVTOOLS}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
+    command: yarn run:dev

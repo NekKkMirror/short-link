@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ShortenedLink {
+  id          String  @id @default(uuid())
+  shortUrl    String  @unique
+  originalUrl String
+  alias       String? @unique
+  clickCount  Int     @default(0)
+
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+
+  analytics Analytics[]
+
+  @@map("shortened_links")
+}
+
+model Analytics {
+  id        String @id @default(uuid())
+  linkId    String
+  ipAddress String
+
+  clickedAt DateTime @default(now())
+
+  link ShortenedLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@map("analytics")
+}

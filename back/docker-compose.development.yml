@@ -1,0 +1,56 @@
+services:
+  app:
+    build:
+      context: .
+      target: development
+    image: ${APP_IMAGE_NAME}
+    container_name: ${APP_CONTAINER_NAME}
+    volumes:
+      - .:/home/node/app:cache
+      - ./node_modules:/home/node/app/node_modules
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    environment:
+      APP_NODE_ENV: ${APP_NODE_ENV}
+      APP_PORT: ${APP_PORT}
+      APP_HOST: ${APP_HOST}
+
+      EXAMPLE_MESSAGE: ${EXAMPLE_MESSAGE}
+
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:${DB_PORT}/${DB_NAME}
+
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_DB: ${REDIS_DB}
+      REDIS_DEFAULT_CACHE_TTL: ${REDIS_DEFAULT_CACHE_TTL}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://${APP_HOST}:${APP_PORT}/api/v1/example/hello || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: sh -c "npm run prisma:generate && exec npm run start:dev"
+
+  db:
+    image: ${DB_IMAGE_NAME}
+    container_name: ${DB_CONTAINER_NAME}
+    restart: always
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    environment:
+      POSTGRES_USER: "${DB_USER}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+      POSTGRES_DB: "${DB_NAME}"
+    volumes:
+      - short-link_pg-data_development:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -h localhost -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  short-link_pg-data_development:
